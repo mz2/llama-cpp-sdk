@@ -1,21 +1,23 @@
 name: llama-cpp
 adopt-info: llama-cpp
-summary: LLM inference in C/C++ with llama.cpp
+summary: LLM inference in C/C++ with llama.cpp (NVIDIA CUDA)
 description: |
   llama.cpp provides tooling for large language model inference: the
   `llama-server` OpenAI-compatible HTTP server, `llama-cli`, `llama-bench`,
-  and related utilities. This is the `latest` (CPU) channel; GPU-accelerated
-  builds are available on the `cuda`, `rocm`, and `vulkan` channels. Downloaded
-  models and server configuration are persisted across workshop updates, and an
-  opt-in `llama-server` service is exposed on port 8080.
+  and related utilities. This is the `cuda` channel, built with the NVIDIA
+  CUDA backend. The CUDA runtime is provided by the companion `cuda-toolkit`
+  SDK, which must be added to the same workshop; only the llama.cpp binaries
+  and the ggml CUDA backend are shipped here. Downloaded models and server
+  configuration are persisted across workshop updates, and an opt-in
+  `llama-server` service is exposed on port 8080.
 license: MIT
 platforms:
-  ubuntu@22.04:amd64:
   ubuntu@24.04:amd64:
-  ubuntu@22.04:arm64:
   ubuntu@24.04:arm64:
 
 plugs:
+  gpu:
+    interface: gpu
   models:
     interface: mount
     workshop-target: /home/workshop/.cache/llama.cpp
@@ -37,14 +39,20 @@ parts:
       craftctl set version="$VERSION"
       ARCH="$CRAFT_ARCH_BUILD_FOR"
       case "$ARCH" in
-        amd64) ASSET="llama-${VERSION}-bin-ubuntu-x64.tar.gz" ;;
-        arm64) ASSET="llama-${VERSION}-bin-ubuntu-arm64.tar.gz" ;;
+        amd64) ASSET="llamacpp-amd64+cuda12.tar.gz" ;;
+        arm64) ASSET="llamacpp-arm64+cuda12.tar.gz" ;;
         *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
       esac
-      curl -fLO "https://github.com/ggml-org/llama.cpp/releases/download/${VERSION}/${ASSET}"
+      curl -fLO "https://github.com/canonical/llama.cpp-builds/releases/download/${VERSION}/${ASSET}"
       mkdir -p "$CRAFT_PART_SRC/opt/llama.cpp"
-      tar -xzf "$ASSET" --strip-components=1 -C "$CRAFT_PART_SRC/opt/llama.cpp"
+      tar -xzf "$ASSET" -C "$CRAFT_PART_SRC/opt/llama.cpp"
       rm "$ASSET"
+      # The CUDA runtime (cudart/cublas) is supplied by the `cuda-toolkit` SDK
+      # under /usr/local/cuda; drop the copies bundled in the build so they
+      # resolve against the toolkit at runtime.
+      rm -f "$CRAFT_PART_SRC"/opt/llama.cpp/lib/libcudart.so* \
+            "$CRAFT_PART_SRC"/opt/llama.cpp/lib/libcublas.so* \
+            "$CRAFT_PART_SRC"/opt/llama.cpp/lib/libcublasLt.so*
   services:
     plugin: dump
     source: services
