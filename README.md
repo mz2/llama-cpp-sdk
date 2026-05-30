@@ -18,7 +18,7 @@ A minimal workshop:
 name: llama-app
 base: ubuntu@24.04
 sdks:
-  - name: llama-cpp
+  - name: llama-cpp-mz2
     channel: latest/stable
 
 actions:
@@ -66,7 +66,7 @@ base: ubuntu@24.04
 sdks:
   - name: cuda-toolkit
     channel: 12.9/stable
-  - name: llama-cpp
+  - name: llama-cpp-mz2
     channel: cuda/stable
     plugs:
       gpu: {}
