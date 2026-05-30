@@ -1,4 +1,4 @@
-name: llama-cpp
+name: llama-cpp-mz2
 adopt-info: llama-cpp
 summary: LLM inference in C/C++ with llama.cpp (AMD ROCm)
 description: |
