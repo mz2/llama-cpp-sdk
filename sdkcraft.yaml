@@ -1,13 +1,14 @@
 name: llama-cpp
 adopt-info: llama-cpp
-summary: LLM inference in C/C++ with llama.cpp
+summary: LLM inference in C/C++ with llama.cpp (Vulkan)
 description: |
   llama.cpp provides tooling for large language model inference: the
   `llama-server` OpenAI-compatible HTTP server, `llama-cli`, `llama-bench`,
-  and related utilities. This is the `latest` (CPU) channel; GPU-accelerated
-  builds are available on the `cuda`, `rocm`, and `vulkan` channels. Downloaded
-  models and server configuration are persisted across workshop updates, and an
-  opt-in `llama-server` service is exposed on port 8080.
+  and related utilities. This is the `vulkan` channel, built with the
+  cross-vendor Vulkan backend. The Vulkan loader and Mesa drivers are
+  installed in the workshop; GPU access is granted via the `gpu` interface.
+  Downloaded models and server configuration are persisted across workshop
+  updates, and an opt-in `llama-server` service is exposed on port 8080.
 license: MIT
 platforms:
   ubuntu@22.04:amd64:
@@ -16,6 +17,8 @@ platforms:
   ubuntu@24.04:arm64:
 
 plugs:
+  gpu:
+    interface: gpu
   models:
     interface: mount
     workshop-target: /home/workshop/.cache/llama.cpp
@@ -37,8 +40,8 @@ parts:
       craftctl set version="$VERSION"
       ARCH="$CRAFT_ARCH_BUILD_FOR"
       case "$ARCH" in
-        amd64) ASSET="llama-${VERSION}-bin-ubuntu-x64.tar.gz" ;;
-        arm64) ASSET="llama-${VERSION}-bin-ubuntu-arm64.tar.gz" ;;
+        amd64) ASSET="llama-${VERSION}-bin-ubuntu-vulkan-x64.tar.gz" ;;
+        arm64) ASSET="llama-${VERSION}-bin-ubuntu-vulkan-arm64.tar.gz" ;;
         *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
       esac
       curl -fLO "https://github.com/ggml-org/llama.cpp/releases/download/${VERSION}/${ASSET}"
