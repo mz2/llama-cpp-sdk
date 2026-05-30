@@ -1,0 +1,37 @@
+#!/usr/bin/bash
+# Runs as the workshop user after interfaces are connected.
+# Prepares the model cache and an opt-in `llama-server` user service.
+set -eu
+
+# Mount targets: model cache (HF downloads via `-hf`) and server config.
+mkdir -p ~/.cache/llama.cpp ~/.config/llama-cpp
+
+# Seed a server configuration the first time. The server stays off until the
+# user sets LLAMA_SERVER_ARGS (e.g. a model); see the auto-enable logic below.
+if [ ! -f ~/.config/llama-cpp/server.env ]; then
+    cat >~/.config/llama-cpp/server.env <<'EOF'
+# Extra arguments for `llama-server`, appended after `--host 0.0.0.0 --port 8080`.
+# Leave empty to keep the server disabled. Set a model to enable it on the next
+# `workshop refresh` (or run `systemctl --user enable --now llama-server`).
+#
+# Examples:
+#   LLAMA_SERVER_ARGS="-hf ggml-org/gemma-3-1b-it-GGUF"
+#   LLAMA_SERVER_ARGS="-m /project/models/model.gguf -c 4096 -ngl 99"
+LLAMA_SERVER_ARGS=""
+EOF
+fi
+
+# Install the (opt-in) systemd user unit.
+install -D --mode=644 "${SDK}/llama-server.service" \
+    ~/.config/systemd/user/llama-server.service
+systemctl --user daemon-reload
+
+# Enable the server only once a model/args are configured. This makes the
+# service opt-in: edit server.env, then refresh, and it starts.
+# shellcheck disable=SC1090
+. ~/.config/llama-cpp/server.env 2>/dev/null || true
+if [ -n "${LLAMA_SERVER_ARGS:-}" ]; then
+    systemctl --user enable --now llama-server
+else
+    systemctl --user disable --now llama-server 2>/dev/null || true
+fi

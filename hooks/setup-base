@@ -1,0 +1,36 @@
+#!/usr/bin/bash
+# Runs as root on launch and refresh.
+# Puts the llama.cpp tools on PATH and makes the bundled shared libraries
+# discoverable, regardless of which backend channel is installed.
+set -eu
+
+ROOT="${SDK}/opt/llama.cpp"
+
+# The upstream tarballs (cpu, vulkan) are flat: executables and *.so live in
+# one directory. The canonical builds (cuda, rocm) split them into bin/ and
+# lib/. Detect the layout and configure PATH / ld.so accordingly.
+if [ -d "${ROOT}/bin" ]; then
+    BINDIR="${ROOT}/bin"
+    LIBDIRS="${ROOT}/bin ${ROOT}/lib"
+else
+    BINDIR="${ROOT}"
+    LIBDIRS="${ROOT}"
+fi
+
+cat <<EOF >/etc/profile.d/llama-cpp.sh
+export PATH="${BINDIR}:\$PATH"
+EOF
+
+: >/etc/ld.so.conf.d/llama-cpp.conf
+for d in ${LIBDIRS}; do
+    echo "${d}" >>/etc/ld.so.conf.d/llama-cpp.conf
+done
+ldconfig
+
+# The Vulkan backend needs the Vulkan loader and an ICD on the host. Detect it
+# by the presence of the Vulkan ggml backend and install the userspace drivers.
+# (NVIDIA / AMD proprietary ICDs arrive via the `gpu` interface.)
+if find "${ROOT}" -name 'libggml-vulkan.so*' -print -quit | grep -q .; then
+    apt-get update
+    eatmydata apt-get install libvulkan1 mesa-vulkan-drivers vulkan-tools
+fi

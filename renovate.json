@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "enabledManagers": [
+    "custom.regex"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^VERSION$/"],
+      "matchStrings": ["(?<currentValue>b[0-9]+)"],
+      "depNameTemplate": "ggml-org/llama.cpp",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^b(?<major>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^VERSION$/"],
+      "matchStrings": ["(?<currentValue>b[0-9]+)"],
+      "depNameTemplate": "canonical/llama.cpp-builds",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^b(?<major>\\d+)$"
+    }
+  ],
+  "baseBranchPatterns": [
+    "latest",
+    "cuda",
+    "rocm",
+    "vulkan"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["ggml-org/llama.cpp"],
+      "matchBaseBranches": ["latest", "vulkan"]
+    },
+    {
+      "matchPackageNames": ["ggml-org/llama.cpp"],
+      "matchBaseBranches": ["cuda", "rocm"],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": ["canonical/llama.cpp-builds"],
+      "matchBaseBranches": ["cuda", "rocm"]
+    },
+    {
+      "matchPackageNames": ["canonical/llama.cpp-builds"],
+      "matchBaseBranches": ["latest", "vulkan"],
+      "enabled": false
+    }
+  ]
+}

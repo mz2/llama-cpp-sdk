@@ -1,0 +1,12 @@
+[Unit]
+Description=llama.cpp server (llama-server)
+After=network.target
+
+[Service]
+EnvironmentFile=%h/.config/llama-cpp/server.env
+ExecStart=/bin/bash -lc 'exec llama-server --host 0.0.0.0 --port 8080 $LLAMA_SERVER_ARGS'
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

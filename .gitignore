@@ -1,0 +1,5 @@
+# sdkcraft build artifacts
+*.sdk
+
+# local Claude Code skill tooling (not part of the SDK)
+.claude/

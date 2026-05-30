@@ -1,0 +1,24 @@
+#!/usr/bin/bash
+# Runs as root after setup-project. Reports SDK health.
+set -eu
+
+ROOT="${SDK}/opt/llama.cpp"
+
+# The CLI must run. With GGML_BACKEND_DL the CPU backend always loads, so
+# `--version` succeeds on every channel (even before a GPU backend is present).
+if ! output=$(sudo -u workshop --login llama-cli --version 2>&1); then
+    workshopctl set-health error "llama-cli is not runnable: ${output}"
+    exit 0
+fi
+
+# The CUDA channel ships only the ggml CUDA backend; the CUDA runtime
+# (libcudart/libcublas) comes from the co-installed `cuda-toolkit` SDK.
+if find "${ROOT}" -name 'libggml-cuda.so' -print -quit | grep -q .; then
+    if ! ldconfig -p | grep -q 'libcudart\.so'; then
+        workshopctl set-health error \
+            "CUDA backend present but libcudart was not found. Add the 'cuda-toolkit' SDK (e.g. channel 12.9/stable) to this workshop."
+        exit 0
+    fi
+fi
+
+workshopctl set-health okay
