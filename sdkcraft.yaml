@@ -1,4 +1,4 @@
-name: llama-cpp-mz2
+name: llama-cpp-sdk
 adopt-info: llama-cpp
 summary: LLM inference in C/C++ with llama.cpp
 description: |
