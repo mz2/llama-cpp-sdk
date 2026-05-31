@@ -18,7 +18,7 @@ A minimal workshop:
 name: llama-app
 base: ubuntu@24.04
 sdks:
-  - name: llama-cpp-mz2
+  - name: llama-cpp-sdk
     channel: latest/stable
 
 actions:
@@ -31,17 +31,30 @@ actions:
 ```
 
 This demonstrates running a model from the command line with persistent model
-storage. Replace `latest/stable` with `cuda/stable`, `rocm/stable`, or
-`vulkan/stable` for GPU acceleration.
+storage. Replace `latest/stable` with `latest/stable/cuda`,
+`latest/stable/rocm`, or `latest/stable/vulkan` for GPU acceleration (see
+[Channels](#channels) below).
 
-### Available channels
+### Channels
+
+The GPU backends are currently published as **channel branches** under
+`latest/stable`, rather than as dedicated tracks. Dedicated tracks (`cuda/stable`,
+…) require a store-side track guardrail that is not yet enabled for this SDK;
+channel branches need no guardrail, so the backend variants can ship immediately.
 
 | Channel | Backend | Source | Platforms |
 |---|---|---|---|
 | `latest/stable` | CPU | upstream ggml-org/llama.cpp | ubuntu@22.04, ubuntu@24.04 — amd64, arm64 |
-| `cuda/stable` | NVIDIA CUDA 12 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64, arm64 |
-| `rocm/stable` | AMD ROCm 7.2 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64 |
-| `vulkan/stable` | Vulkan (cross-vendor) | upstream ggml-org/llama.cpp | ubuntu@22.04, ubuntu@24.04 — amd64, arm64 |
+| `latest/stable/cuda` | NVIDIA CUDA 12 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64, arm64 |
+| `latest/stable/rocm` | AMD ROCm 7.2 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64 |
+| `latest/stable/vulkan` | Vulkan (cross-vendor) | upstream ggml-org/llama.cpp | ubuntu@22.04, ubuntu@24.04 — amd64, arm64 |
+
+> **Note on channel branches.** The third segment in `latest/stable/cuda` is a
+> *channel branch*. Channel branches are **ephemeral** — the store expires them
+> roughly 30 days after their last release — so each publish refreshes them.
+> Once dedicated tracks are enabled for this SDK, the GPU channels will move to
+> the durable `cuda/stable`, `rocm/stable`, and `vulkan/stable` form, and these
+> branch channels will be retired.
 
 ---
 
@@ -66,8 +79,8 @@ base: ubuntu@24.04
 sdks:
   - name: cuda-toolkit
     channel: 12.9/stable
-  - name: llama-cpp-mz2
-    channel: cuda/stable
+  - name: llama-cpp-sdk
+    channel: latest/stable/cuda
     plugs:
       gpu: {}
 ```
