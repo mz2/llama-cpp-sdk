@@ -1,0 +1,4 @@
+name: test-llama-cpp-sdk
+base: ${BASE}
+sdks:
+  - name: try-llama-cpp-sdk

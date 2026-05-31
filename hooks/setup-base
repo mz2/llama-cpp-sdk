@@ -27,10 +27,19 @@ for d in ${LIBDIRS}; do
 done
 ldconfig
 
-# The Vulkan backend needs the Vulkan loader and an ICD on the host. Detect it
-# by the presence of the Vulkan ggml backend and install the userspace drivers.
-# (NVIDIA / AMD proprietary ICDs arrive via the `gpu` interface.)
-if find "${ROOT}" -name 'libggml-vulkan.so*' -print -quit | grep -q .; then
-    apt-get update
-    eatmydata apt-get install libvulkan1 mesa-vulkan-drivers vulkan-tools
+# Install the runtime libraries the prebuilt binaries need but the base image
+# lacks. Every backend's ggml-cpu library links OpenMP (libgomp); the upstream
+# tarballs do not bundle it, so llama-cli fails with "libgomp.so.1: cannot open
+# shared object file" without it. The ROCm build additionally needs libatomic;
+# the Vulkan build needs the Vulkan loader and a userspace ICD (NVIDIA/AMD
+# proprietary ICDs arrive via the `gpu` interface).
+pkgs="libgomp1"
+if find "${ROOT}" -name 'libggml-hip.so*' -print -quit | grep -q .; then
+    pkgs="${pkgs} libatomic1"
 fi
+if find "${ROOT}" -name 'libggml-vulkan.so*' -print -quit | grep -q .; then
+    pkgs="${pkgs} libvulkan1 mesa-vulkan-drivers vulkan-tools"
+fi
+apt-get update
+# shellcheck disable=SC2086
+eatmydata apt-get install ${pkgs}
