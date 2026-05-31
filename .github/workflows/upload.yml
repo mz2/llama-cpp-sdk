@@ -16,10 +16,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-upload:
+  amd64:
     uses: canonical/sdkcraft-actions/.github/workflows/upload.yml@main
     with:
-      platforms: '["ubuntu@22.04:amd64","ubuntu@24.04:amd64","ubuntu@22.04:arm64","ubuntu@24.04:arm64"]'
+      runs-on: '["ubuntu-24.04"]'
+      platforms: '["ubuntu@22.04:amd64","ubuntu@24.04:amd64"]'
+      platform-flag: "--platform"
+      risk: "stable"
+    secrets:
+      SDKCRAFT_STORE_CREDENTIALS: ${{ secrets.SDKCRAFT_STORE_CREDENTIALS }}
+  arm64:
+    uses: canonical/sdkcraft-actions/.github/workflows/upload.yml@main
+    with:
+      runs-on: '["self-hosted","Linux","ARM64"]'
+      platforms: '["ubuntu@22.04:arm64","ubuntu@24.04:arm64"]'
       platform-flag: "--platform"
       risk: "stable"
     secrets:
