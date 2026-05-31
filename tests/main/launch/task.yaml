@@ -1,0 +1,26 @@
+summary: Launch a workshop with the llama-cpp-sdk SDK and run the tools
+
+# Note: on the cuda channel this requires an NVIDIA GPU and the cuda-toolkit
+# SDK in the workshop (check-health gates Ready on the CUDA runtime). The
+# latest/rocm/vulkan channels reach Ready on CPU and pass without a GPU.
+
+prepare: |
+  envsubst '${BASE}' <workshop.yaml.in >workshop.yaml
+  workshop launch
+
+restore: |
+  workshop remove || true
+
+execute: |
+  # The CLI must run end-to-end. This is what catches missing runtime
+  # libraries: the ggml-cpu backend (which links libgomp) is dlopened, so a
+  # missing libgomp only surfaces when llama-cli actually runs, not at link
+  # time. Reaching this point also proves the workshop reached Ready, i.e.
+  # check-health reported okay.
+  workshop exec -- llama-cli --version
+  # The server binary is on PATH and the persisted model cache exists.
+  workshop exec -- sh -c 'command -v llama-server'
+  workshop exec -- test -d /home/workshop/.cache/llama.cpp
+
+debug: |
+  workshop tasks

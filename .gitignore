@@ -1,5 +1,9 @@
 # sdkcraft build artifacts
 *.sdk
 
+# spread test artifacts (e.g. a local workshop snap copied into tests/)
+tests/*.snap
+tests/*.comp
+
 # local Claude Code skill tooling (not part of the SDK)
 .claude/
