@@ -1,17 +1,17 @@
 # llama.cpp SDK for Workshop
 
-llama.cpp provides tooling for large language model inference in C/C++: the
-`llama-server` OpenAI-compatible HTTP server, `llama-cli`, `llama-bench`, and
-related utilities. The SDK ships the llama.cpp binaries on `PATH`, persists
-downloaded models and server configuration across workshop updates, and
-provides an opt-in `llama-server` service on port 8080. Separate channels carry
-backend-specific builds.
+llama.cpp runs large language model inference in C/C++. This SDK:
+
+- puts the llama.cpp tools (`llama-server`, `llama-cli`, `llama-bench`, and
+  related utilities) on `PATH`;
+- persists downloaded models and server configuration across workshop updates;
+- provides an opt-in, OpenAI-compatible `llama-server` on port 8080.
+
+Each backend (CPU, CUDA, ROCm, Vulkan) is a separate channel.
 
 ---
 
 ## Reference workshop
-
-A minimal workshop:
 
 ```yaml
 # workshop.yaml
@@ -30,47 +30,36 @@ actions:
     llama-bench "$@"
 ```
 
-This demonstrates running a model from the command line with persistent model
-storage. Replace `latest/stable` with `latest/stable/cuda`,
-`latest/stable/rocm`, or `latest/stable/vulkan` for GPU acceleration (see
-[Channels](#channels) below).
+This runs a model from the command line with persistent model storage. For GPU
+acceleration, use a GPU channel in place of `latest/stable` (see
+[Channels](#channels)).
 
 ### Channels
 
-The GPU backends are currently published as **channel branches** under
-`latest/stable`, rather than as dedicated tracks. Dedicated tracks (`cuda/stable`,
-…) require a store-side track guardrail that is not yet enabled for this SDK;
-channel branches need no guardrail, so the backend variants can ship immediately.
+| Channel | Backend | Platforms |
+|---|---|---|
+| `latest/stable` | CPU | ubuntu@22.04, ubuntu@24.04 (amd64, arm64) |
+| `latest/stable/cuda` | NVIDIA CUDA 12 | ubuntu@24.04 (amd64) |
+| `latest/stable/rocm` | AMD ROCm 7.2 | ubuntu@24.04 (amd64) |
+| `latest/stable/vulkan` | Vulkan (cross-vendor) | ubuntu@22.04, ubuntu@24.04 (amd64, arm64) |
 
-| Channel | Backend | Source | Platforms |
-|---|---|---|---|
-| `latest/stable` | CPU | upstream ggml-org/llama.cpp | ubuntu@22.04, ubuntu@24.04 — amd64, arm64 |
-| `latest/stable/cuda` | NVIDIA CUDA 12 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64, arm64 |
-| `latest/stable/rocm` | AMD ROCm 7.2 | canonical/llama.cpp-builds | ubuntu@24.04 — amd64 |
-| `latest/stable/vulkan` | Vulkan (cross-vendor) | upstream ggml-org/llama.cpp | ubuntu@22.04, ubuntu@24.04 — amd64, arm64 |
-
-> **Note on channel branches.** The third segment in `latest/stable/cuda` is a
-> *channel branch*. Channel branches are **ephemeral** — the store expires them
-> roughly 30 days after their last release — so each publish refreshes them.
-> Once dedicated tracks are enabled for this SDK, the GPU channels will move to
-> the durable `cuda/stable`, `rocm/stable`, and `vulkan/stable` form, and these
-> branch channels will be retired.
+The GPU backends are published as *branches* under `latest/stable`
+(`latest/stable/cuda`, and so on). This is temporary, until dedicated tracks
+(`cuda/stable`, `rocm/stable`, `vulkan/stable`) are approved for this SDK. The
+channels will move to that form once the tracks exist.
 
 ---
 
 ## Using the SDK
 
-### Prerequisites, project layout
+### Prerequisites
 
-1. The `cuda` channel requires the `cuda-toolkit` SDK in the same workshop
-   (for example `channel: 12.9/stable`); it supplies the CUDA runtime under
-   `/usr/local/cuda`. The other channels have no prerequisite SDKs.
-2. No project files are required. Models can be pulled from Hugging Face with
-   `-hf`, or mounted into the workshop and referenced by path.
-3. On launch, the SDK adds the llama.cpp tools to `PATH`, prepares the model
-   cache, and installs (but does not start) the `llama-server` service.
+Most channels have no prerequisites.
 
-A GPU-accelerated CUDA workshop combines the two SDKs:
+The `cuda` channel is the exception. It expects the CUDA runtime
+(`libcudart`, `libcublas`) under `/usr/local/cuda`, supplied by the
+`cuda-toolkit` SDK in the same workshop. A CUDA workshop therefore combines the
+two SDKs:
 
 ```yaml
 # workshop.yaml
@@ -87,32 +76,34 @@ sdks:
 
 ### Run a model
 
+Models can be pulled from Hugging Face with `-hf`, or mounted into the workshop
+and referenced by path.
+
 ```bash
 workshop shell
-# Download from Hugging Face and chat (cached under ~/.cache/llama.cpp):
+# Pull from Hugging Face and chat (cached under ~/.cache/llama.cpp):
 llama-cli -hf ggml-org/gemma-3-1b-it-GGUF
-# Offload layers to the GPU on the cuda/rocm/vulkan channels:
+# On a GPU channel, offload layers to the GPU:
 llama-cli -hf ggml-org/gemma-3-1b-it-GGUF -ngl 99
 ```
 
-Downloaded models are stored in `~/.cache/llama.cpp`, mapped to the host via the
-`models` mount plug, so subsequent workshop updates reuse them.
+Downloaded models live in `~/.cache/llama.cpp` (the `models` mount), so they are
+reused across workshop updates.
 
 ### Run the server
 
-The `llama-server` service is opt-in. Configure a model, then it starts on the
-next refresh (or enable it directly):
+The `llama-server` service is installed but off by default. Set a model, and it
+starts on the next refresh (or enable it directly):
 
 ```bash
 workshop shell
-# Set a model (and any flags) for the server:
 echo 'LLAMA_SERVER_ARGS="-hf ggml-org/gemma-3-1b-it-GGUF -ngl 99"' \
   > ~/.config/llama-cpp/server.env
 systemctl --user enable --now llama-server
 ```
 
-The server exposes an OpenAI-compatible API on port 8080. Other SDKs or host
-tools can reach it via the `llama-server` tunnel slot:
+It serves an OpenAI-compatible API on port 8080, reachable through the
+`llama-server` tunnel slot:
 
 ```bash
 curl http://localhost:8080/v1/chat/completions \
@@ -120,7 +111,7 @@ curl http://localhost:8080/v1/chat/completions \
   -d '{"messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-### Verify from the command line
+### Verify
 
 ```bash
 workshop shell
@@ -135,21 +126,20 @@ workshop info   # shows the SDK health status
 ### `gpu`
 
 - Interface: `gpu`
-- Present on: `cuda`, `rocm`, `vulkan` channels (not `latest`).
-- Purpose: Grants access to GPU hardware on the host for accelerated inference.
+- Channels: `cuda`, `rocm`, `vulkan` (not `latest`)
+- Purpose: GPU access on the host for accelerated inference.
 
 ### `models`
 
 - Interface: `mount`
 - Workshop target: `/home/workshop/.cache/llama.cpp`
-- Purpose: Persists models downloaded with `-hf` between workshop updates.
+- Purpose: Persists models downloaded with `-hf` across workshop updates.
 
 ### `config`
 
 - Interface: `mount`
 - Workshop target: `/home/workshop/.config/llama-cpp`
-- Purpose: Persists the `llama-server` configuration (`server.env`) so the
-  opt-in server keeps its settings across workshop updates.
+- Purpose: Persists the `llama-server` configuration (`server.env`).
 
 ## Slots (resources this SDK provides)
 
@@ -157,8 +147,7 @@ workshop info   # shows the SDK health status
 
 - Interface: `tunnel`
 - Endpoint: `8080`
-- Purpose: Exposes the `llama-server` OpenAI-compatible API for use by other
-  SDKs or host tools, once the server has been enabled.
+- Purpose: Exposes the `llama-server` API once the server is enabled.
 
 ---
 
@@ -166,7 +155,7 @@ workshop info   # shows the SDK health status
 
 - [llama.cpp repository](https://github.com/ggml-org/llama.cpp)
 - [llama-server documentation](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md)
-- [Workshop documentation](https://ubuntu.com/workshop/docs/)
+- [Workshop documentation](https://documentation.ubuntu.com/canonical-workshop/latest/)
 
 ---
 
