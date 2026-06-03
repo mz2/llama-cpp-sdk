@@ -1,4 +1,4 @@
-name: llama-cpp-sdk
+name: llama-cpp
 adopt-info: llama-cpp
 summary: LLM inference in C/C++ with llama.cpp (Vulkan)
 description: |

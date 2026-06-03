@@ -1,4 +1,4 @@
-summary: Launch a workshop with the llama-cpp-sdk SDK and run the tools
+summary: Launch a workshop with the llama-cpp SDK and run the tools
 
 # Note: on the cuda channel this requires an NVIDIA GPU and the cuda-toolkit
 # SDK in the workshop (check-health gates Ready on the CUDA runtime). The
