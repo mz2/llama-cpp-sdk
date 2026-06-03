@@ -18,7 +18,7 @@ Each backend (CPU, CUDA, ROCm, Vulkan) is a separate channel.
 name: llama-app
 base: ubuntu@24.04
 sdks:
-  - name: llama-cpp-sdk
+  - name: llama-cpp
     channel: latest/stable
 
 actions:
@@ -68,7 +68,7 @@ base: ubuntu@24.04
 sdks:
   - name: cuda-toolkit
     channel: 12.9/stable
-  - name: llama-cpp-sdk
+  - name: llama-cpp
     channel: latest/stable/cuda
     plugs:
       gpu: {}
